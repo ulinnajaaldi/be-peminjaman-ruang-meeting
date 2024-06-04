@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String
+  email     String   @unique
+  password  String
+  fullname  String
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model ProsessPinjam {
+  id                      String                    @id @default(cuid())
+  status                  String
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  DetailPeminjamanRuangan DetailPeminjamanRuangan[]
+
+  @@map("prosess_pinjams")
+}
+
+model Ruangan {
+  id                      String                    @id @default(cuid())
+  name                    String
+  slug                    String
+  description             String
+  images                  String
+  facilities              String
+  capacity                String
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  DetailPeminjamanRuangan DetailPeminjamanRuangan[]
+
+  @@map("ruangans")
+}
+
+model DetailPeminjamanRuangan {
+  idRuangan        String
+  idProsessPinjam  String
+  employeeName     String
+  employeeDivision String
+  employeeNik      String
+  employeePhone    String
+  employeeEmail    String
+  date             DateTime
+  startHour        String
+  endHour          String
+  people           String
+  necessity        String
+  additional       String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  Ruangan          Ruangan            @relation(fields: [idRuangan], references: [id])
+  ProsessPinjam    ProsessPinjam      @relation(fields: [idProsessPinjam], references: [id])
+  SaprasPeminjaman SaprasPeminjaman[]
+
+  @@id([idRuangan, idProsessPinjam])
+  @@map("detail_peminjaman_ruangans")
+}
+
+model Sapras {
+  id               String             @id @default(cuid())
+  name             String
+  description      String
+  images           String
+  ammount          String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  SaprasPeminjaman SaprasPeminjaman[]
+
+  @@map("sapras")
+}
+
+model SaprasPeminjaman {
+  idSapras                String
+  idRuangan               String
+  idProsessPinjam         String
+  quantity                String
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  Sapras                  Sapras                  @relation(fields: [idSapras], references: [id])
+  DetailPeminjamanRuangan DetailPeminjamanRuangan @relation(fields: [idRuangan, idProsessPinjam], references: [idRuangan, idProsessPinjam])
+
+  @@id([idSapras, idRuangan, idProsessPinjam])
+  @@map("sapras_peminjamans")
+}
