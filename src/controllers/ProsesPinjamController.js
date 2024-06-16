@@ -32,12 +32,6 @@ export const getAllProsesPinjam = async (req, res) => {
   const searchCondition = {
     OR: [
       {
-        userId: {
-          contains: search,
-          mode: "insensitive",
-        },
-      },
-      {
         status: {
           contains: search,
           mode: "insensitive",
@@ -84,14 +78,6 @@ export const getAllProsesPinjam = async (req, res) => {
             },
           },
         },
-        User: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
-            username: true,
-          },
-        },
       },
     });
 
@@ -112,15 +98,11 @@ export const getAllProsesPinjam = async (req, res) => {
         status: prosesPinjam.status,
         createdAt: prosesPinjam.createdAt,
         updatedAt: prosesPinjam.updatedAt,
-        user: {
-          email: prosesPinjam.User.email,
-          firstName: prosesPinjam.User.firstName,
-          lastName: prosesPinjam.User.lastName,
-          username: prosesPinjam.User.username,
-        },
         detailPeminjamanRuangan: prosesPinjam.DetailPeminjamanRuangan.map(
           (detailPeminjamanRuangan) => ({
             ruangan: detailPeminjamanRuangan.Ruangan.name,
+            employeeName: detailPeminjamanRuangan.employeeName,
+            employeeDivision: detailPeminjamanRuangan.employeeDivision,
             date: detailPeminjamanRuangan.date,
             startHour: detailPeminjamanRuangan.startHour,
             endHour: detailPeminjamanRuangan.endHour,
@@ -174,14 +156,6 @@ export const getProsesPinjamById = async (req, res) => {
             },
           },
         },
-        User: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
-            username: true,
-          },
-        },
       },
     });
 
@@ -198,17 +172,16 @@ export const getProsesPinjamById = async (req, res) => {
         status: prosesPinjam.status,
         createdAt: prosesPinjam.createdAt,
         updatedAt: prosesPinjam.updatedAt,
-        user: {
-          email: prosesPinjam.User.email,
-          firstName: prosesPinjam.User.firstName,
-          lastName: prosesPinjam.User.lastName,
-          username: prosesPinjam.User.username,
-        },
         detailPeminjamanRuangan: prosesPinjam.DetailPeminjamanRuangan.map(
           (detailPeminjamanRuangan) => ({
             ruangan: detailPeminjamanRuangan.Ruangan.name,
             ruanganImage: JSON.parse(detailPeminjamanRuangan.Ruangan.images),
             ruanganSlug: detailPeminjamanRuangan.Ruangan.slug,
+            employeeName: detailPeminjamanRuangan.employeeName,
+            employeeDivision: detailPeminjamanRuangan.employeeDivision,
+            employeeNik: detailPeminjamanRuangan.employeeNik,
+            employeePhone: detailPeminjamanRuangan.employeePhone,
+            employeeEmail: detailPeminjamanRuangan.employeeEmail,
             date: detailPeminjamanRuangan.date,
             startHour: detailPeminjamanRuangan.startHour,
             endHour: detailPeminjamanRuangan.endHour,
@@ -299,23 +272,82 @@ export const deleteProsesPinjam = async (req, res) => {
   }
 };
 
+export const checkProsesPinjam = async (req, res) => {
+  const { idRuangan, date, startHour, endHour } = req.body;
+
+  try {
+    const prosesPinjam = await prisma.prosessPinjam.findMany({
+      where: {
+        DetailPeminjamanRuangan: {
+          some: {
+            AND: [
+              {
+                idRuangan: idRuangan,
+              },
+              {
+                date: date,
+              },
+              {
+                OR: [
+                  {
+                    startHour: {
+                      lte: startHour,
+                    },
+                    endHour: {
+                      gte: startHour,
+                    },
+                  },
+                  {
+                    startHour: {
+                      lte: endHour,
+                    },
+                    endHour: {
+                      gte: endHour,
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    if (prosesPinjam.length > 0) {
+      logger.info("Proses peminjaman found!");
+      return res.status(200).json({
+        message: "Sudah ada yang meminjam pada jam tersebut!",
+        data: false,
+      });
+    }
+
+    logger.info("Proses peminjaman not found!");
+    res
+      .status(200)
+      .json({ message: "Ruangan tersedia di jam tersebut", data: true });
+  } catch (error) {
+    logger.error("Error checking proses peminjaman!", error.message);
+    res.status(400).json({ error: error.message });
+  }
+};
+
 export const createPeminjamanRuangan = async (req, res) => {
-  const {
-    userId,
-    status = "Menunggu Persetujuan",
-    detailPeminjamanRuangan,
-  } = req.body;
+  const { status = "Menunggu Persetujuan", detailPeminjamanRuangan } = req.body;
 
   const saprasPeminjaman = detailPeminjamanRuangan.saprasPeminjaman || [];
 
   try {
     const peminjamanRuangan = await prisma.prosessPinjam.create({
       data: {
-        userId,
         status,
         DetailPeminjamanRuangan: {
           create: {
             idRuangan: detailPeminjamanRuangan.idRuangan,
+            employeeName: detailPeminjamanRuangan.employeeName,
+            employeeDivision: detailPeminjamanRuangan.employeeDivision,
+            employeeNik: detailPeminjamanRuangan.employeeNik,
+            employeePhone: detailPeminjamanRuangan.employeePhone,
+            employeeEmail: detailPeminjamanRuangan.employeeEmail,
             date: detailPeminjamanRuangan.date,
             startHour: detailPeminjamanRuangan.startHour,
             endHour: detailPeminjamanRuangan.endHour,
