@@ -7,6 +7,7 @@ import {
   updateRuangan,
   getRuanganDetail,
   getRuanganBySlug,
+  getDetailPeminjamanRuangan,
 } from "../controllers/RuanganController.js";
 
 export const RuanganRouter = Router();
@@ -18,3 +19,4 @@ RuanganRouter.post("/", jwtAuth, createRuangan);
 RuanganRouter.put("/:id", jwtAuth, updateRuangan);
 RuanganRouter.patch("/:id", jwtAuth, updateRuangan);
 RuanganRouter.delete("/:slug", jwtAuth, deleteRuangan);
+RuanganRouter.get("/detail/peminjaman", getDetailPeminjamanRuangan);

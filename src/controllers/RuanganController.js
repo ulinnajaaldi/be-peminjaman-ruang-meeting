@@ -139,7 +139,6 @@ export const getRuanganDetail = async (req, res) => {
       include: {
         DetailPeminjamanRuangan: {
           select: {
-            idProsessPinjam: true,
             date: true,
             startHour: true,
             endHour: true,
@@ -178,6 +177,43 @@ export const getRuanganDetail = async (req, res) => {
     });
   } catch (error) {
     logger.error("Error fetching details ruangan!", error.message);
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const getDetailPeminjamanRuangan = async (req, res) => {
+  const { ruanganId, date } = req.query;
+
+  try {
+    const detailPeminjamanRuangan =
+      await prisma.detailPeminjamanRuangan.findMany({
+        where: {
+          ruanganId: ruanganId,
+          date: new Date(date),
+          ProsessPinjam: {
+            status: "Disetujui",
+          },
+        },
+        select: {
+          idProsessPinjam: true,
+          date: true,
+          startHour: true,
+          endHour: true,
+          people: true,
+          necessity: true,
+          employeeName: true,
+          employeeDivision: true,
+          employeeEmail: true,
+        },
+      });
+
+    logger.info("Detail peminjaman ruangan fetched successfully!");
+    res.status(200).json({
+      message: "Detail peminjaman ruangan fetched successfully!",
+      data: detailPeminjamanRuangan,
+    });
+  } catch (error) {
+    logger.error("Error fetching detail peminjaman ruangan!", error.message);
     res.status(400).json({ error: error.message });
   }
 };
