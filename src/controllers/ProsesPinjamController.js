@@ -388,7 +388,7 @@ export const createPeminjamanRuangan = async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: '"Tribun Solo 📰" <ulinnajaaldi.tech@gmail.com>',
+      from: `"Tribun Solo 📰" <${process.env.GMAIL_USER}>`,
       to: detailPeminjamanRuangan.employeeEmail,
       subject: "Peminjaman Ruangan",
       text: `Peminjaman ruangan ${detail.Ruangan.name} pada hari ${formattedDate} berhasil dibuat, silahkan tunggu konfirmasi dari admin!`,
@@ -396,8 +396,8 @@ export const createPeminjamanRuangan = async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: '"Tribun Solo 📰 Peminjaman Ruang" <ulinnajaaldi.tech@gmail.com>',
-      to: "<ulinnajaaldi.tech@gmail.com>",
+      from: `"Tribun Solo 📰 Peminjaman Ruang" <${process.env.GMAIL_USER}>`,
+      to: `${process.env.GMAIL_USER}`,
       subject: "Peminjaman Ruangan",
       text: `Peminjaman ruang baru oleh ${detail.employeeName} pada tanggal ${formattedDate}, jam ${detail.startHour}-${detail.endHour} di ruangan ${detail.Ruangan.name} telah dibuat. Silahkan cek di dashboard admin untuk menyetujui atau menolak peminjaman!`,
       html: `<p>Peminjaman ruang baru oleh <b>${detail.employeeName}</b> pada tanggal <b>${formattedDate}</b>, jam <b>${detail.startHour}-${detail.endHour}</b> di ruangan <b>${detail.Ruangan.name}</b> telah dibuat. Silahkan cek di dashboard admin untuk menyetujui atau menolak peminjaman!</p>
@@ -525,7 +525,7 @@ export const acceptProsesPinjam = async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: '"Tribun Solo 📰" <ulinnajaaldi.tech@gmail.com>',
+      from: `"Tribun Solo 📰" <${process.env.GMAIL_USER}>`,
       to: detail.employeeEmail,
       subject: `Peminjaman Ruang ${detail.Ruangan.name} Disetujui!`,
       text: `Peminjaman ruangan pada tanggal ${formattedDate}, jam ${detail.startHour}-${detail.endHour} di ruangan ${detail.Ruangan.name} telah disetujui!`,
@@ -573,7 +573,7 @@ export const rejectProsesPinjam = async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: '"Tribun Solo 📰" <ulinnajaaldi.tech@gmail.com>',
+      from: `"Tribun Solo 📰" <${process.env.GMAIL_USER}>`,
       to: detail.employeeEmail,
       subject: `Peminjaman Ruang ${detail.Ruangan.name} Ditolak!`,
       text: `Peminjaman ruangan pada tanggal ${formattedDate}, jam ${detail.startHour}-${detail.endHour} di ruangan ${detail.Ruangan.name} telah ditolak!, Silahkan hubungi admin untuk keterangan lebih lanjut!`,
