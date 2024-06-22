@@ -1,5 +1,8 @@
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import prisma from "../prisma.js";
 import { logger } from "../utils/logger.js";
+import { transporter } from "../utils/nodemailer.js";
 
 export const createProsesPinjam = async (req, res) => {
   const { userId, status } = req.body;
@@ -238,6 +241,9 @@ export const deleteProsesPinjam = async (req, res) => {
       where: {
         id: id,
       },
+      include: {
+        DetailPeminjamanRuangan: true,
+      },
     });
 
     if (!existingRecord) {
@@ -278,6 +284,7 @@ export const checkProsesPinjam = async (req, res) => {
   try {
     const prosesPinjam = await prisma.prosessPinjam.findMany({
       where: {
+        status: "Disetujui",
         DetailPeminjamanRuangan: {
           some: {
             AND: [
@@ -367,12 +374,36 @@ export const createPeminjamanRuangan = async (req, res) => {
         DetailPeminjamanRuangan: {
           include: {
             SaprasPeminjaman: true,
+            Ruangan: true,
           },
         },
       },
     });
 
     logger.info("Peminjaman ruangan created!");
+
+    const detail = peminjamanRuangan.DetailPeminjamanRuangan[0];
+    const formattedDate = format(new Date(detail.date), "EEEE, dd MMMM yyyy", {
+      locale: idLocale,
+    });
+
+    await transporter.sendMail({
+      from: '"Tribun Solo 📰" <ulinnajaaldi.tech@gmail.com>',
+      to: detailPeminjamanRuangan.employeeEmail,
+      subject: "Peminjaman Ruangan",
+      text: `Peminjaman ruangan ${detail.Ruangan.name} pada hari ${formattedDate} berhasil dibuat, silahkan tunggu konfirmasi dari admin!`,
+      html: `<p>Peminjaman ruangan <b>${detail.Ruangan.name}</b> pada hari <b>${formattedDate}</b> berhasil dibuat, silahkan tunggu konfirmasi dari admin!</p>`,
+    });
+
+    await transporter.sendMail({
+      from: '"Tribun Solo 📰 Peminjaman Ruang" <ulinnajaaldi.tech@gmail.com>',
+      to: "<ulinnajaaldi.tech@gmail.com>",
+      subject: "Peminjaman Ruangan",
+      text: `Peminjaman ruang baru oleh ${detail.employeeName} pada tanggal ${formattedDate}, jam ${detail.startHour}-${detail.endHour} di ruangan ${detail.Ruangan.name} telah dibuat. Silahkan cek di dashboard admin untuk menyetujui atau menolak peminjaman!`,
+      html: `<p>Peminjaman ruang baru oleh <b>${detail.employeeName}</b> pada tanggal <b>${formattedDate}</b>, jam <b>${detail.startHour}-${detail.endHour}</b> di ruangan <b>${detail.Ruangan.name}</b> telah dibuat. Silahkan cek di dashboard admin untuk menyetujui atau menolak peminjaman!</p>
+             <p><a href=${process.env.PUBLIC_URL} style="color: white; background-color: blue; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Dashboard</a></p>`,
+    });
+
     res
       .status(201)
       .json({ message: "Peminjaman ruangan created!", peminjamanRuangan });
@@ -475,9 +506,34 @@ export const acceptProsesPinjam = async (req, res) => {
       data: {
         status: "Disetujui",
       },
+      include: {
+        DetailPeminjamanRuangan: {
+          include: {
+            Ruangan: true,
+          },
+        },
+      },
+    });
+
+    const detail = prosesPinjam.DetailPeminjamanRuangan[0];
+    if (!detail) {
+      throw new Error("DetailPeminjamanRuangan not found");
+    }
+
+    const formattedDate = format(new Date(detail.date), "EEEE, dd MMMM yyyy", {
+      locale: idLocale,
+    });
+
+    await transporter.sendMail({
+      from: '"Tribun Solo 📰" <ulinnajaaldi.tech@gmail.com>',
+      to: detail.employeeEmail,
+      subject: `Peminjaman Ruang ${detail.Ruangan.name} Disetujui!`,
+      text: `Peminjaman ruangan pada tanggal ${formattedDate}, jam ${detail.startHour}-${detail.endHour} di ruangan ${detail.Ruangan.name} telah disetujui!`,
+      html: `<p>Peminjaman ruangan pada tanggal <b>${formattedDate}</b>, jam <b>${detail.startHour}-${detail.endHour}</b> di ruangan <b>${detail.Ruangan.name}</b> telah disetujui!</p>`,
     });
 
     logger.info("Proses peminjaman accepted!");
+
     res
       .status(200)
       .json({ message: "Proses peminjaman accepted!", prosesPinjam });
@@ -498,6 +554,30 @@ export const rejectProsesPinjam = async (req, res) => {
       data: {
         status: "Ditolak",
       },
+      include: {
+        DetailPeminjamanRuangan: {
+          include: {
+            Ruangan: true,
+          },
+        },
+      },
+    });
+
+    const detail = prosesPinjam.DetailPeminjamanRuangan[0];
+    if (!detail) {
+      throw new Error("DetailPeminjamanRuangan not found");
+    }
+
+    const formattedDate = format(new Date(detail.date), "EEEE, dd MMMM yyyy", {
+      locale: idLocale,
+    });
+
+    await transporter.sendMail({
+      from: '"Tribun Solo 📰" <ulinnajaaldi.tech@gmail.com>',
+      to: detail.employeeEmail,
+      subject: `Peminjaman Ruang ${detail.Ruangan.name} Ditolak!`,
+      text: `Peminjaman ruangan pada tanggal ${formattedDate}, jam ${detail.startHour}-${detail.endHour} di ruangan ${detail.Ruangan.name} telah ditolak!, Silahkan hubungi admin untuk keterangan lebih lanjut!`,
+      html: `<p>Peminjaman ruangan pada tanggal <b>${formattedDate}</b>, jam <b>${detail.startHour}-${detail.endHour}</b> di ruangan <b>${detail.Ruangan.name}</b> telah ditolak!, Silahkan hubungi admin untuk keterangan lebih lanjut!</p>`,
     });
 
     logger.info("Proses peminjaman rejected!");
